@@ -9,6 +9,8 @@ var logger = require("morgan");
 var indexRouter = require("./routes/index");
 var usersRouter = require("./routes/users");
 const authRoute = require("./routes/authRoute");
+const eventRoute = require("./routes/eventRoute");
+const { Event } = require("./models/EventModel");
 
 var app = express();
 
@@ -30,5 +32,6 @@ sequelize
 app.use("/", indexRouter);
 app.use("/users", usersRouter);
 app.use("/auth", authRoute);
+app.use("/events", eventRoute);
 
 module.exports = app;
