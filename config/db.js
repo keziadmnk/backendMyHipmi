@@ -9,7 +9,12 @@ const dbname = "myhipmi";
 const dbUrl = `${dialect}://${username}:${password}@${host}/${dbname}`;
 // dbUrl = `mysql://root:@localhost/myhipmi`;
 
-const sequelize = new Sequelize(dbUrl);
+const sequelize = new Sequelize(dbUrl, {
+  timezone: "+07:00", // WIB timezone
+  dialectOptions: {
+    timezone: "+07:00",
+  },
+});
 
 try {
   sequelize.authenticate();

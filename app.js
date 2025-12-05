@@ -10,6 +10,8 @@ var indexRouter = require("./routes/index");
 var usersRouter = require("./routes/users");
 const authRoute = require("./routes/authRoute");
 const eventRoute = require("./routes/eventRoute");
+const agendaRoute = require("./routes/agendaRoute");
+const absenRoute = require("./routes/absenRoute");
 const { Event } = require("./models/EventModel");
 
 var app = express();
@@ -33,5 +35,7 @@ app.use("/", indexRouter);
 app.use("/users", usersRouter);
 app.use("/auth", authRoute);
 app.use("/events", eventRoute);
+app.use("/agenda", agendaRoute);
+app.use("/absen", absenRoute);
 
 module.exports = app;
