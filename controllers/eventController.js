@@ -2,7 +2,7 @@ const { Event } = require("../models/EventModel");
 const { Pengurus } = require("../models/PengurusModel");
 
 const createEvent = async (req, res) => {
-  // Ambil data dari body request
+  // Ambil data dari body request (multipart form data)
   const { 
     id_pengurus,
     nama_event, 
@@ -12,8 +12,7 @@ const createEvent = async (req, res) => {
     dresscode, 
     penyelenggara, 
     contact_person, 
-    deskripsi, 
-    poster_url 
+    deskripsi
   } = req.body;
 
   // Validasi input wajib
@@ -22,9 +21,34 @@ const createEvent = async (req, res) => {
   }
 
   try {
+    let posterUrl = null;
+    
+   
+    console.log("=== CREATE EVENT DEBUG ===");
+    console.log("Content-Type:", req.get("content-type"));
+    console.log("File received:", req.file ? req.file.filename : "No file");
+    if (req.file) {
+      console.log("File details:", {
+        fieldname: req.file.fieldname,
+        originalname: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+        filename: req.file.filename
+      });
+    }
+    console.log("Request body:", req.body);
+    console.log("==========================");
+    
+    if (req.file) {
+      posterUrl = `${req.protocol}://${req.get("host")}/uploads/events/${req.file.filename}`;
+      console.log("✅ Poster URL generated:", posterUrl);
+    } else {
+      console.log("❌ No file uploaded - req.file is null");
+    }
+    
     // Simpan data ke database
     const newEvent = await Event.create({
-    id_pengurus,
+      id_pengurus,
       nama_event,
       tanggal,
       waktu,
@@ -33,8 +57,10 @@ const createEvent = async (req, res) => {
       penyelenggara,
       contact_person,
       deskripsi,
-      poster_url,
+      poster_url: posterUrl,
     });
+    
+    console.log("Event created successfully with poster_url:", newEvent.poster_url);
 
     return res.status(201).json({ 
       message: "Event berhasil ditambahkan",
@@ -52,7 +78,7 @@ const getEvents = async (req, res) => {
       include: [
         {
           model: Pengurus,
-          as: 'Creator', // Sesuai alias di Relation.js
+          as: 'Creator', 
           attributes: ['id_pengurus', 'nama_pengurus', 'email_pengurus'],
         },
         
@@ -71,5 +97,25 @@ const getEvents = async (req, res) => {
   }
 };
 
+const deleteEvent = async (req, res) => {
+    const { id } = req.params; 
 
-module.exports = { createEvent, getEvents };
+    try {
+        // Cari dan hapus event
+        const deletedRows = await Event.destroy({
+            where: { id_event: id }
+        });
+
+        if (deletedRows === 0) {
+            return res.status(404).json({ message: "Event tidak ditemukan" });
+        }
+
+
+        return res.status(200).json({ message: "Event berhasil dihapus" });
+    } catch (error) {
+        console.error("Error deleting event:", error);
+        return res.status(500).json({ message: "Terjadi kesalahan pada server saat menghapus event" });
+    }
+};
+
+module.exports = { createEvent, getEvents, deleteEvent };

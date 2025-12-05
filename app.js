@@ -17,6 +17,12 @@ const { Event } = require("./models/EventModel");
 var app = express();
 
 app.use(logger("dev"));
+
+// PENTING: Route yang menggunakan multer HARUS dipanggil SEBELUM body parser
+// karena multer memerlukan raw body stream untuk multipart/form-data
+app.use("/events", eventRoute);
+
+// Body parser untuk route lainnya (JSON dan URL-encoded)
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
@@ -34,8 +40,9 @@ sequelize
 app.use("/", indexRouter);
 app.use("/users", usersRouter);
 app.use("/auth", authRoute);
-app.use("/events", eventRoute);
 app.use("/agenda", agendaRoute);
 app.use("/absen", absenRoute);
+app.use("/uploads", express.static("uploads"));
+
 
 module.exports = app;
