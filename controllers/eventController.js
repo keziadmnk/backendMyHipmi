@@ -117,5 +117,100 @@ const deleteEvent = async (req, res) => {
         return res.status(500).json({ message: "Terjadi kesalahan pada server saat menghapus event" });
     }
 };
+// Tambahkan di bawah fungsi deleteEvent yang sudah ada
 
-module.exports = { createEvent, getEvents, deleteEvent };
+const getEventById = async (req, res) => {
+    const { id } = req.params; // Ambil ID dari URL parameter
+
+    try {
+        const event = await Event.findOne({
+            where: { id_event: id },
+            // Mengambil data relasi dari tabel Pengurus (Creator)
+            include: [
+                {
+                    model: Pengurus,
+                    as: 'Creator', 
+                    attributes: ['id_pengurus', 'nama_pengurus', 'email_pengurus'],
+                },
+            ],
+        });
+
+        if (!event) {
+            return res.status(404).json({ message: "Event tidak ditemukan" });
+        }
+
+        return res.status(200).json({
+            message: "Detail event berhasil diambil",
+            event: event // Mengembalikan objek event tunggal
+        });
+    } catch (error) {
+        console.error("Error fetching event by ID:", error);
+        return res.status(500).json({ message: "Terjadi kesalahan pada server saat mengambil detail event" });
+    }
+};
+const updateEvent = async (req, res) => {
+    const { id } = req.params;
+    const { 
+        id_pengurus, // Asumsi ini adalah ID user yang melakukan edit (Pengedit)
+        nama_event, 
+        tanggal, 
+        waktu, 
+        tempat, 
+        dresscode, 
+        penyelenggara, 
+        contact_person, 
+        deskripsi
+    } = req.body;
+
+    const updatePayload = {
+        id_pengedit: id_pengurus, // Opsional: catat siapa yang mengedit
+        nama_event,
+        tanggal,
+        waktu,
+        tempat,
+        dresscode,
+        penyelenggara,
+        contact_person,
+        deskripsi,
+    };
+
+    try {
+        let eventToUpdate = await Event.findByPk(id);
+
+        if (!eventToUpdate) {
+            return res.status(404).json({ message: "Event tidak ditemukan" });
+        }
+
+        if (req.file) {
+            // Jika ada file baru diunggah, generate URL poster baru
+            const posterUrl = `${req.protocol}://${req.get("host")}/uploads/events/${req.file.filename}`;
+            updatePayload.poster_url = posterUrl;
+            // TODO: Tambahkan logika penghapusan file lama di server jika diperlukan
+        } 
+        
+        // Hapus field yang bernilai null/undefined agar tidak menimpa data yang sudah ada (jika Anda ingin membiarkan field tertentu tidak berubah)
+        Object.keys(updatePayload).forEach(key => 
+            (updatePayload[key] === undefined || updatePayload[key] === null) && delete updatePayload[key]
+        );
+
+
+        const [updatedRows] = await Event.update(updatePayload, {
+            where: { id_event: id }
+        });
+
+        // Ambil data event yang sudah diupdate untuk respon
+        const updatedEvent = await Event.findByPk(id);
+        
+        // Kirim status 200 (OK) meskipun updatedRows === 0, selama event ditemukan
+        return res.status(200).json({ 
+            message: updatedRows > 0 ? "Event berhasil diupdate" : "Event berhasil diupdate (tidak ada perubahan data)",
+            event: updatedEvent
+        });
+    } catch (error) {
+        console.error("Error updating event:", error);
+        return res.status(500).json({ message: "Terjadi kesalahan pada server saat mengupdate event" });
+    }
+};
+
+
+module.exports = { createEvent, getEvents, deleteEvent, getEventById, updateEvent  };
