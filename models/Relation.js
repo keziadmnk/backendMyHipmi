@@ -3,6 +3,8 @@ const { Pengurus } = require("./PengurusModel");
 const { Event } = require("./EventModel");
 const AgendaRapat = require("./AgendaRapatModel");
 const AbsenRapat = require("./AbsenRapatModel");
+const AbsenPiket = require("./AbsenPiketModel");
+const { JadwalPiket } = require("./JadwalPiketModel");
 
 Bidang.hasMany(Pengurus, {foreignKey: 'id_bidang'})
 Pengurus.belongsTo(Bidang, {foreignKey: 'id_bidang'})
@@ -49,4 +51,31 @@ Pengurus.hasMany(AbsenRapat, {
 AbsenRapat.belongsTo(Pengurus, {
     foreignKey: 'id_pengurus',
     as: 'Pengurus'
+});
+
+JadwalPiket.hasMany(Pengurus, {
+  foreignKey: "id_jadwal_piket",
+  as: "PengurusPiket",
+});
+Pengurus.belongsTo(JadwalPiket, {
+  foreignKey: "id_jadwal_piket",
+  as: "JadwalPiket",
+});
+
+JadwalPiket.hasMany(AbsenPiket, {
+  foreignKey: "id_jadwal_piket",
+  as: "AbsenPiket",
+});
+AbsenPiket.belongsTo(JadwalPiket, {
+  foreignKey: "id_jadwal_piket",
+  as: "Jadwal",
+});
+
+Pengurus.hasMany(AbsenPiket, {
+  foreignKey: "id_pengurus",
+  as: "AbsenPiket",
+});
+AbsenPiket.belongsTo(Pengurus, {
+  foreignKey: "id_pengurus",
+  as: "Pengurus",
 });

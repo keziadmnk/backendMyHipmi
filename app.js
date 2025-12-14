@@ -13,6 +13,7 @@ const eventRoute = require("./routes/eventRoute");
 const agendaRoute = require("./routes/agendaRoute");
 const absenRoute = require("./routes/absenRoute");
 const notificationRoute = require("./routes/notificationRoute");
+const piketRoute = require("./routes/piketRoute");
 const { Event } = require("./models/EventModel");
 
 var app = express();
@@ -44,6 +45,9 @@ app.use("/auth", authRoute);
 app.use("/agenda", agendaRoute);
 app.use("/absen", absenRoute);
 app.use("/notifications", notificationRoute);
+app.use("/piket", piketRoute);
+const pengurusRoute = require("./routes/pengurusRoute");
+app.use("/pengurus", pengurusRoute);
 app.use("/uploads", express.static("uploads"));
 
 

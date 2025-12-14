@@ -17,7 +17,17 @@ const Pengurus = sequelize.define(
         model: "bidang",
         key: "id_bidang",
       },
-    },
+     
+},
+ id_jadwal_piket: {
+  type: DataTypes.INTEGER,
+  allowNull: true,
+  references: {
+    model: "jadwal_piket",
+    key: "id_jadwal_piket",
+  },
+
+},
     nama_pengurus: {
       type: DataTypes.STRING(255),
       allowNull: false,
