@@ -23,3 +23,6 @@ TIMEZONE_FIX.md
 *.njsproj
 *.sln
 *.sw?
+
+# Firebase Admin SDK (SECRET)
+config/serviceAccountKey.json
