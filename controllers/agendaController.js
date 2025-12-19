@@ -1,6 +1,8 @@
 const AgendaRapat = require("../models/AgendaRapatModel");
 const { Pengurus } = require("../models/PengurusModel");
 const AbsenRapat = require("../models/AbsenRapatModel");
+const { admin, firebaseInitialized } = require("../config/firebaseConfig");
+const { Notification } = require("../models/NotificationModel");
 
 // GET semua agenda rapat
 exports.getAllAgenda = async (req, res) => {
@@ -147,6 +149,44 @@ exports.createAgenda = async (req, res) => {
       description,
       isDone: false,
     });
+
+    // Kirim notifikasi ke semua user
+    try {
+      // Format tanggal yang lebih mudah dibaca
+      const dateObj = new Date(date);
+      const bulanNama = ["Januari", "Februari", "Maret", "April", "Mei", "Juni",
+        "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+      const tanggalFormatted = `${dateObj.getDate()} ${bulanNama[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
+
+      const notificationTitle = "📅 Agenda Rapat Baru!";
+      const notificationBody = `${title} - ${tanggalFormatted} ${startTimeDisplay || ''} di ${location}`;
+
+      // Simpan notifikasi ke database
+      await Notification.create({
+        title: notificationTitle,
+        body: notificationBody,
+      });
+
+      // Kirim notifikasi via Firebase Cloud Messaging ke topic 'agenda_rapat'
+      if (firebaseInitialized) {
+        // GUNAKAN DATA PAYLOAD agar notifikasi SELALU muncul (foreground & background)
+        const message = {
+          data: {
+            title: notificationTitle,
+            body: notificationBody,
+          },
+          topic: "agenda_rapat", // Semua user yang subscribe ke topic ini akan menerima notifikasi
+        };
+
+        await admin.messaging().send(message);
+        console.log("✅ Successfully sent FCM data payload for agenda rapat:", title);
+      } else {
+        console.log("⚠️  Notification saved to DB but NOT sent via FCM (Firebase not configured)");
+      }
+    } catch (notifError) {
+      console.error("Error sending notification:", notifError);
+      // Tidak mengembalikan error ke user karena agenda rapat sudah berhasil dibuat
+    }
 
     res.status(201).json({
       success: true,
