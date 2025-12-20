@@ -13,6 +13,7 @@ const eventRoute = require("./routes/eventRoute");
 const agendaRoute = require("./routes/agendaRoute");
 const absenRoute = require("./routes/absenRoute");
 const notificationRoute = require("./routes/notificationRoute");
+const kasRoute = require("./routes/kasRoute");
 const { Event } = require("./models/EventModel");
 
 var app = express();
@@ -22,6 +23,7 @@ app.use(logger("dev"));
 // PENTING: Route yang menggunakan multer HARUS dipanggil SEBELUM body parser
 // karena multer memerlukan raw body stream untuk multipart/form-data
 app.use("/events", eventRoute);
+app.use("/kas", kasRoute);
 
 // Body parser untuk route lainnya (JSON dan URL-encoded)
 app.use(express.json());

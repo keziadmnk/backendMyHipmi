@@ -46,6 +46,10 @@ const Pengurus = sequelize.define(
       type: DataTypes.STRING(255),
       allowNull: true,
     },
+    fcm_token: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+    },
   },
   {
     tableName: "pengurus",

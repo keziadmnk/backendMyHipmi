@@ -2,6 +2,7 @@ const { seedBidang } = require("./seedBidang");
 const { seedPengurus } = require("./seedPengurus");
 const { seedAgenda } = require("./seedAgenda");
 const { seedAbsen } = require("./seedAbsen");
+const { seedKas } = require("./seedKas");
 const sequelize = require("../config/db");
 
 const runSeeders = async () => {
@@ -24,12 +25,17 @@ const runSeeders = async () => {
     await seedAbsen();
     console.log("");
 
+    console.log("💰 Seeding Kas...");
+    await seedKas();
+    console.log("");
+
     console.log("✅ Semua seeders berhasil dijalankan!");
     console.log("\n📝 Catatan:");
     console.log("   - Password di file seeder adalah plain text (terbaca)");
     console.log("   - Password di database sudah ter-hash secara otomatis");
     console.log("   - Default password untuk semua pengurus: password123");
     console.log("   - 3 agenda rapat dan data absen berhasil dibuat");
+    console.log("   - 10 data kas dengan berbagai status berhasil dibuat");
 
     await sequelize.close();
     process.exit(0);
