@@ -14,6 +14,7 @@ const agendaRoute = require("./routes/agendaRoute");
 const absenRoute = require("./routes/absenRoute");
 const notificationRoute = require("./routes/notificationRoute");
 const piketRoute = require("./routes/piketRoute");
+const kasRoute = require("./routes/kasRoute");
 const { Event } = require("./models/EventModel");
 
 var app = express();

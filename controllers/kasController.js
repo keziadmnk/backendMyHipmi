@@ -371,10 +371,80 @@ const getKasById = async (req, res) => {
   }
 };
 
+// GET /api/kas/total - Get total kas untuk dashboard
+const getTotalKas = async (req, res) => {
+  try {
+    const { user_id } = req.query;
+    
+    const whereClause = user_id ? { user_id: parseInt(user_id) } : {};
+
+    // Ambil semua data kas dengan status "lunas"
+    const kasList = await Kas.findAll({
+      where: {
+        ...whereClause,
+        status: "lunas"
+      },
+      attributes: ["nominal", "deskripsi"]
+    });
+
+    // Hitung total
+    const totalKas = kasList.reduce((total, kas) => {
+      // Jika deskripsi mengandung kata "pengeluaran" atau "keluar", kurangi
+      // Jika deskripsi mengandung kata "pemasukan" atau "masuk", tambah
+      const isKeluar = kas.deskripsi.toLowerCase().includes("pengeluaran") || 
+                       kas.deskripsi.toLowerCase().includes("keluar");
+      
+      if (isKeluar) {
+        return total - parseFloat(kas.nominal);
+      } else {
+        return total + parseFloat(kas.nominal);
+      }
+    }, 0);
+
+    // Hitung jumlah transaksi
+    const totalTransaksi = kasList.length;
+
+    // Hitung kas pending (belum dibayar)
+    const kasPending = await Kas.count({
+      where: {
+        ...whereClause,
+        status: "pending"
+      }
+    });
+
+    // Hitung kas ditolak
+    const kasDitolak = await Kas.count({
+      where: {
+        ...whereClause,
+        status: "ditolak"
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Total kas berhasil dihitung",
+      data: {
+        totalKas: totalKas,
+        totalTransaksi: totalTransaksi,
+        kasPending: kasPending,
+        kasDitolak: kasDitolak,
+        kasLunas: kasList.length
+      }
+    });
+  } catch (error) {
+    console.error("Error calculating total kas:", error);
+    res.status(500).json({
+      success: false,
+      message: "Terjadi kesalahan saat menghitung total kas"
+    });
+  }
+};
+
 module.exports = {
   getKasList,
   createKas,
   updateKas,
   deleteKas,
   getKasById,
+  getTotalKas,
 };

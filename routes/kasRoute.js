@@ -8,6 +8,7 @@ const {
   updateKas,
   deleteKas,
   getKasById,
+  getTotalKas,
 } = require("../controllers/kasController");
 
 // Multer error handler
@@ -35,6 +36,7 @@ const handleMulterError = (err, req, res, next) => {
 
 // Routes
 router.get("/", getKasList);
+router.get("/total", getTotalKas);
 router.post("/", upload.single("file"), handleMulterError, createKas);
 router.get("/:id", getKasById);
 router.put("/:id", updateKas);
