@@ -1,4 +1,5 @@
 const { seedBidang } = require("./seedBidang");
+const { seedJadwalPiket } = require("./seedJadwalPiket");
 const { seedPengurus } = require("./seedPengurus");
 const { seedAgenda } = require("./seedAgenda");
 const { seedAbsen } = require("./seedAbsen");
@@ -13,6 +14,10 @@ const runSeeders = async () => {
     await seedBidang();
     console.log("");
 
+    console.log("✅ Seeding Jadwal Piket...");
+    await seedJadwalPiket();
+    console.log("");
+
     console.log("👥 Seeding Pengurus...");
     const pengurusList = await seedPengurus();
     console.log("");
@@ -25,9 +30,7 @@ const runSeeders = async () => {
     await seedAbsen();
     console.log("");
 
-    console.log("💰 Seeding Kas...");
-    await seedKas();
-    console.log("");
+    
 
     console.log("✅ Semua seeders berhasil dijalankan!");
     console.log("\n📝 Catatan:");
