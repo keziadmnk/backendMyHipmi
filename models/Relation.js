@@ -87,5 +87,5 @@ Pengurus.hasMany(Kas, {
 });
 Kas.belongsTo(Pengurus, {
     foreignKey: 'user_id',
-    as: 'Pengurus'
+    as: 'User'
 });

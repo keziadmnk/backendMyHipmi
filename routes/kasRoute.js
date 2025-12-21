@@ -39,7 +39,7 @@ router.get("/", getKasList);
 router.get("/total", getTotalKas);
 router.post("/", upload.single("file"), handleMulterError, createKas);
 router.get("/:id", getKasById);
-router.put("/:id", updateKas);
+router.put("/:id", upload.single("file"), handleMulterError, updateKas);
 router.delete("/:id", deleteKas);
 
 module.exports = router;

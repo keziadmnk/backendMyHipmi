@@ -58,12 +58,12 @@ const getKasList = async (req, res) => {
       id: kas.id,
       user_id: kas.user_id,
       deskripsi: kas.deskripsi,
-      nominal: kas.nominal,
+      nominal: parseFloat(kas.nominal), // Pastikan nominal berupa number
       bukti_transfer_url: kas.bukti_transfer_url
         ? `${req.protocol}://${req.get("host")}/${kas.bukti_transfer_url}`
         : null,
-      tanggal: kas.tanggal,
-      status: kas.status,
+      tanggal: kas.tanggal, // Format: YYYY-MM-DD HH:mm:ss
+      status: kas.status.toLowerCase(), // Pastikan lowercase untuk konsistensi
       user: kas.User ? {
         id_pengurus: kas.User.id_pengurus,
         nama_pengurus: kas.User.nama_pengurus,
@@ -132,26 +132,35 @@ const createKas = async (req, res) => {
       status: "pending",
     });
 
-    // Format response
+    // Format response sesuai dokumentasi frontend
     const responseData = {
       id: newKas.id,
       user_id: newKas.user_id,
       deskripsi: newKas.deskripsi,
-      nominal: newKas.nominal,
+      nominal: parseFloat(newKas.nominal),
+      status: newKas.status.toLowerCase(),
       bukti_transfer_url: buktiTransferUrl
         ? `${req.protocol}://${req.get("host")}/${buktiTransferUrl}`
         : null,
-      tanggal: newKas.tanggal,
-      status: newKas.status,
+      created_at: newKas.tanggal,
     };
 
     res.status(201).json({
       success: true,
-      message: "Data kas berhasil ditambahkan",
+      message: "Pembayaran kas berhasil dikirim",
       data: responseData,
     });
   } catch (error) {
     console.error("Error creating kas:", error);
+    
+    // Handle file upload error
+    if (error.message && error.message.includes("File")) {
+      return res.status(400).json({
+        success: false,
+        message: "Gagal mengupload file gambar",
+      });
+    }
+    
     res.status(500).json({
       success: false,
       message: "Terjadi kesalahan saat menambahkan data kas",
@@ -187,10 +196,29 @@ const updateKas = async (req, res) => {
       updateData.nominal = parseFloat(nominal);
     }
 
+    // Handle file upload
+    if (req.file) {
+      // Hapus file lama jika ada
+      if (kas.bukti_transfer_url) {
+        const fs = require("fs");
+        const oldFilePath = path.join(__dirname, "..", kas.bukti_transfer_url);
+        if (fs.existsSync(oldFilePath)) {
+          try {
+            fs.unlinkSync(oldFilePath);
+            console.log(`🗑️  File lama dihapus: ${kas.bukti_transfer_url}`);
+          } catch (fileError) {
+            console.error("⚠️  Error menghapus file lama:", fileError.message);
+          }
+        }
+      }
+      // Simpan path file baru
+      updateData.bukti_transfer_url = req.file.path.replace(/\\/g, "/");
+    }
+
     // Handle status change
     const oldStatus = kas.status;
-    if (status && ["pending", "lunas", "ditolak"].includes(status)) {
-      updateData.status = status;
+    if (status && ["pending", "lunas", "ditolak"].includes(status.toLowerCase())) {
+      updateData.status = status.toLowerCase();
     }
 
     // Update kas
@@ -236,12 +264,12 @@ const updateKas = async (req, res) => {
       id: kas.id,
       user_id: kas.user_id,
       deskripsi: kas.deskripsi,
-      nominal: kas.nominal,
+      nominal: parseFloat(kas.nominal),
       bukti_transfer_url: kas.bukti_transfer_url
         ? `${req.protocol}://${req.get("host")}/${kas.bukti_transfer_url}`
         : null,
       tanggal: kas.tanggal,
-      status: kas.status,
+      status: kas.status.toLowerCase(),
     };
 
     res.status(200).json({
@@ -251,6 +279,15 @@ const updateKas = async (req, res) => {
     });
   } catch (error) {
     console.error("Error updating kas:", error);
+    
+    // Handle file upload error
+    if (error.message && error.message.includes("File")) {
+      return res.status(400).json({
+        success: false,
+        message: "Gagal mengupload file gambar",
+      });
+    }
+    
     res.status(500).json({
       success: false,
       message: "Terjadi kesalahan saat mengupdate data kas",
@@ -384,58 +421,26 @@ const getTotalKas = async (req, res) => {
         ...whereClause,
         status: "lunas"
       },
-      attributes: ["nominal", "deskripsi"]
+      attributes: ["nominal"]
     });
 
-    // Hitung total
+    // Hitung total kas yang terkumpul (hanya jumlahkan, tidak kurangi)
     const totalKas = kasList.reduce((total, kas) => {
-      // Jika deskripsi mengandung kata "pengeluaran" atau "keluar", kurangi
-      // Jika deskripsi mengandung kata "pemasukan" atau "masuk", tambah
-      const isKeluar = kas.deskripsi.toLowerCase().includes("pengeluaran") || 
-                       kas.deskripsi.toLowerCase().includes("keluar");
-      
-      if (isKeluar) {
-        return total - parseFloat(kas.nominal);
-      } else {
-        return total + parseFloat(kas.nominal);
-      }
+      return total + parseFloat(kas.nominal);
     }, 0);
 
-    // Hitung jumlah transaksi
-    const totalTransaksi = kasList.length;
-
-    // Hitung kas pending (belum dibayar)
-    const kasPending = await Kas.count({
-      where: {
-        ...whereClause,
-        status: "pending"
-      }
-    });
-
-    // Hitung kas ditolak
-    const kasDitolak = await Kas.count({
-      where: {
-        ...whereClause,
-        status: "ditolak"
-      }
-    });
-
+    // Response sesuai format frontend
     res.status(200).json({
       success: true,
-      message: "Total kas berhasil dihitung",
-      data: {
-        totalKas: totalKas,
-        totalTransaksi: totalTransaksi,
-        kasPending: kasPending,
-        kasDitolak: kasDitolak,
-        kasLunas: kasList.length
-      }
+      message: "Total kas berhasil diambil",
+      total_kas: totalKas
     });
   } catch (error) {
     console.error("Error calculating total kas:", error);
     res.status(500).json({
       success: false,
-      message: "Terjadi kesalahan saat menghitung total kas"
+      message: "Terjadi kesalahan saat menghitung total kas",
+      total_kas: 0
     });
   }
 };
