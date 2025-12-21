@@ -1,6 +1,6 @@
 const { Pengurus } = require("../models/PengurusModel");
 const { Bidang } = require("../models/BidangModel");
-const {JadwalPiket} = require("../models/JadwalPiketModel"); 
+const { JadwalPiket } = require("../models/JadwalPiketModel");
 const sequelize = require("../config/db");
 
 const seedPengurus = async () => {
@@ -19,7 +19,7 @@ const seedPengurus = async () => {
       bidangMap[bidang.nama_bidang] = bidang.id_bidang;
     });
 
-     const jadwallist= await JadwalPiket.findAll();
+    const jadwallist = await JadwalPiket.findAll();
     if (jadwallist.length === 0) {
       throw new Error(
         "Jadwal piket belum di-seed. Jalankan seedJadwalPiket terlebih dahulu!"
