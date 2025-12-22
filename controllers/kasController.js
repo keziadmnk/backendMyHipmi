@@ -1,6 +1,7 @@
 const { Kas } = require("../models/KasModel");
 const { Pengurus } = require("../models/PengurusModel");
 const { admin, firebaseInitialized } = require("../config/firebaseConfig");
+const { Notification } = require("../models/NotificationModel");
 const path = require("path");
 
 // Helper function untuk mengirim FCM notification
@@ -38,7 +39,7 @@ const sendFCMNotification = async (fcmToken, title, body, data = {}) => {
 const getKasList = async (req, res) => {
   try {
     const { user_id } = req.query;
-    
+
     const whereClause = user_id ? { user_id: parseInt(user_id) } : {};
 
     const kasList = await Kas.findAll({
@@ -152,7 +153,7 @@ const createKas = async (req, res) => {
     });
   } catch (error) {
     console.error("Error creating kas:", error);
-    
+
     // Handle file upload error
     if (error.message && error.message.includes("File")) {
       return res.status(400).json({
@@ -160,7 +161,7 @@ const createKas = async (req, res) => {
         message: "Gagal mengupload file gambar",
       });
     }
-    
+
     res.status(500).json({
       success: false,
       message: "Terjadi kesalahan saat menambahkan data kas",
@@ -279,7 +280,7 @@ const updateKas = async (req, res) => {
     });
   } catch (error) {
     console.error("Error updating kas:", error);
-    
+
     // Handle file upload error
     if (error.message && error.message.includes("File")) {
       return res.status(400).json({
@@ -287,7 +288,7 @@ const updateKas = async (req, res) => {
         message: "Gagal mengupload file gambar",
       });
     }
-    
+
     res.status(500).json({
       success: false,
       message: "Terjadi kesalahan saat mengupdate data kas",
@@ -412,7 +413,7 @@ const getKasById = async (req, res) => {
 const getTotalKas = async (req, res) => {
   try {
     const { user_id } = req.query;
-    
+
     const whereClause = user_id ? { user_id: parseInt(user_id) } : {};
 
     // Ambil semua data kas dengan status "lunas"
@@ -445,6 +446,88 @@ const getTotalKas = async (req, res) => {
   }
 };
 
+// Send kas payment reminder notification
+const sendKasReminder = async () => {
+  try {
+    // Get current month name in Indonesian
+    const bulanNama = [
+      "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+      "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+    ];
+    const now = new Date();
+    const currentMonth = bulanNama[now.getMonth()];
+    const currentYear = now.getFullYear();
+
+    const notificationTitle = "💰 Reminder Pembayaran Kas";
+    const notificationBody = `Jangan lupa bayar kas bulan ${currentMonth} ${currentYear}! Segera upload bukti transfer.`;
+
+    console.log(`📢 Sending kas reminder for ${currentMonth} ${currentYear}...`);
+
+    // Save notification to database
+    const savedNotification = await Notification.create({
+      title: notificationTitle,
+      body: notificationBody,
+    });
+
+    console.log(`✅ Notification saved to database (ID: ${savedNotification.id_notification})`);
+
+    // Send via Firebase Cloud Messaging to topic 'kas_reminder'
+    if (firebaseInitialized) {
+      const message = {
+        data: {
+          title: notificationTitle,
+          body: notificationBody,
+          type: "kas_reminder",
+          month: currentMonth,
+          year: currentYear.toString(),
+        },
+        topic: "kas_reminder", // All users subscribed to this topic will receive
+      };
+
+      const response = await admin.messaging().send(message);
+      console.log(`✅ FCM notification sent successfully for ${currentMonth}:`, response);
+
+      return {
+        success: true,
+        message: `Reminder sent for ${currentMonth} ${currentYear}`,
+        notificationId: savedNotification.id_notification,
+        fcmResponse: response
+      };
+    } else {
+      console.log("⚠️  Notification saved to DB but NOT sent via FCM (Firebase not initialized)");
+      return {
+        success: false,
+        message: "Firebase not initialized",
+        notificationId: savedNotification.id_notification
+      };
+    }
+  } catch (error) {
+    console.error("❌ Error sending kas reminder:", error);
+    throw error;
+  }
+};
+
+// Manual trigger endpoint for testing
+const sendKasReminderManual = async (req, res) => {
+  try {
+    console.log("🔔 Manual kas reminder triggered by API call");
+    const result = await sendKasReminder();
+
+    return res.status(200).json({
+      success: true,
+      message: "Reminder pembayaran kas berhasil dikirim",
+      data: result
+    });
+  } catch (error) {
+    console.error("Error sending manual kas reminder:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Gagal mengirim reminder pembayaran kas",
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getKasList,
   createKas,
@@ -452,4 +535,6 @@ module.exports = {
   deleteKas,
   getKasById,
   getTotalKas,
+  sendKasReminder,        // For scheduler
+  sendKasReminderManual,  // For API endpoint
 };

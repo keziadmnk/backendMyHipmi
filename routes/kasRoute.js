@@ -9,6 +9,7 @@ const {
   deleteKas,
   getKasById,
   getTotalKas,
+  sendKasReminderManual,
 } = require("../controllers/kasController");
 
 // Multer error handler
@@ -38,6 +39,7 @@ const handleMulterError = (err, req, res, next) => {
 router.get("/", getKasList);
 router.get("/total", getTotalKas);
 router.post("/", upload.single("file"), handleMulterError, createKas);
+router.post("/send-reminder", sendKasReminderManual); // Manual trigger for testing
 router.get("/:id", getKasById);
 router.put("/:id", upload.single("file"), handleMulterError, updateKas);
 router.delete("/:id", deleteKas);

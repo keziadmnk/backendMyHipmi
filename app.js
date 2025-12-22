@@ -16,6 +16,7 @@ const notificationRoute = require("./routes/notificationRoute");
 const piketRoute = require("./routes/piketRoute");
 const kasRoute = require("./routes/kasRoute");
 const { Event } = require("./models/EventModel");
+const { startKasReminderScheduler } = require("./utils/kasScheduler");
 
 var app = express();
 
@@ -36,6 +37,9 @@ sequelize
   .sync({ alter: true })
   .then(() => {
     console.log("Database & tables have been synced.");
+
+    // Start kas payment reminder scheduler
+    startKasReminderScheduler();
   })
   .catch((error) => {
     console.error("Error syncing database:", error);
