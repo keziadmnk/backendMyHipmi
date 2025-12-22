@@ -40,7 +40,7 @@ const seedAgenda = async () => {
       },
       {
         id_pengurus: siti.id_pengurus, // Siti Nurhaliza - Sekretaris
-        title: "Rapat Persiapan Event HIPMI Expo 2026",
+        title: "Rapat HIPMI Expo",
         creatorId: siti.id_pengurus,
         creatorName: "Siti Nurhaliza",
         date: "2025-12-15",
