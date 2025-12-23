@@ -41,6 +41,33 @@ exports.createAbsenPiket = async (req, res) => {
       });
     }
 
+    // Validasi 1: Cek apakah hari ini sesuai dengan jadwal piket
+    const hariIni = new Date(tanggal_absen);
+    const namaHariIndonesia = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+    const hariSekarang = namaHariIndonesia[hariIni.getDay()];
+
+    if (hariSekarang !== jadwalPiket.hari_piket) {
+      return res.status(400).json({
+        success: false,
+        message: `Tidak dapat mengisi absen. Hari piket Anda adalah ${jadwalPiket.hari_piket}, sedangkan hari ini adalah ${hariSekarang}`,
+      });
+    }
+
+    // Validasi 2: Cek apakah pengurus sudah absen di tanggal yang sama
+    const existingAbsen = await AbsenPiket.findOne({
+      where: {
+        id_pengurus: id_pengurus,
+        tanggal_absen: tanggal_absen,
+      },
+    });
+
+    if (existingAbsen) {
+      return res.status(400).json({
+        success: false,
+        message: "Anda sudah melakukan absen piket pada tanggal ini",
+      });
+    }
+
     // Buat absen piket baru
     const newAbsenPiket = await AbsenPiket.create({
       id_pengurus,

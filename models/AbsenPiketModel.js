@@ -26,7 +26,7 @@ const AbsenPiket = sequelize.define(
       },
     },
     foto_bukti: {
-      type: DataTypes.STRING(255),
+      type: DataTypes.TEXT('long'), // Changed from STRING(255) to TEXT('long') to store full base64 images
       allowNull: false,
     },
     tanggal_absen: {
