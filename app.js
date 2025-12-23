@@ -22,12 +22,9 @@ var app = express();
 
 app.use(logger("dev"));
 
-// PENTING: Route yang menggunakan multer HARUS dipanggil SEBELUM body parser
-// karena multer memerlukan raw body stream untuk multipart/form-data
 app.use("/events", eventRoute);
 app.use("/kas", kasRoute);
 
-// Body parser untuk route lainnya (JSON dan URL-encoded)
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
@@ -38,7 +35,6 @@ sequelize
   .then(() => {
     console.log("Database & tables have been synced.");
 
-    // Start kas payment reminder scheduler
     startKasReminderScheduler();
   })
   .catch((error) => {

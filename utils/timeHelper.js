@@ -3,7 +3,7 @@
  */
 
 /**
- * Mendapatkan waktu saat ini dalam timezone WIB
+
  * @returns {Date} Waktu WIB dalam format Date object
  */
 const getWIBTime = () => {
@@ -11,7 +11,6 @@ const getWIBTime = () => {
 };
 
 /**
- * Konversi waktu ke WIB
  * @param {Date|string} date - Tanggal yang ingin dikonversi
  * @returns {Date} Waktu WIB dalam format Date object
  */
@@ -21,7 +20,6 @@ const toWIBTime = (date) => {
 };
 
 /**
- * Format waktu WIB ke string
  * @param {Date} date - Tanggal yang ingin diformat
  * @param {string} format - Format output ('datetime', 'date', 'time')
  * @returns {string} String waktu terformat
@@ -59,16 +57,14 @@ const formatWIBTime = (date, format = "datetime") => {
     });
   }
 
-  // datetime
   return wibDate.toLocaleString("id-ID", options);
 };
 
 /**
- * Mendapatkan offset WIB dalam menit
  * @returns {number} Offset dalam menit (420 untuk GMT+7)
  */
 const getWIBOffset = () => {
-  return 7 * 60; // GMT+7 = 420 minutes
+  return 7 * 60; 
 };
 
 module.exports = {

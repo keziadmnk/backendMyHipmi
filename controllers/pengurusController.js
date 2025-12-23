@@ -1,7 +1,6 @@
 const { Pengurus } = require("../models/PengurusModel");
 const { JadwalPiket } = require("../models/JadwalPiketModel");
 
-// GET - Ambil pengurus berdasarkan ID dengan jadwal piket
 exports.getPengurusById = async (req, res) => {
   try {
     const { id_pengurus } = req.params;
@@ -36,7 +35,6 @@ exports.getPengurusById = async (req, res) => {
   }
 };
 
-// PUT - Update profile pengurus (nomor HP dan alamat)
 exports.updatePengurus = async (req, res) => {
   try {
     const { id_pengurus } = req.params;

@@ -3,7 +3,6 @@ const AgendaRapat = require("../models/AgendaRapatModel");
 const { Pengurus } = require("../models/PengurusModel");
 const { getWIBTime } = require("../utils/timeHelper");
 
-// GET semua absen rapat
 exports.getAllAbsen = async (req, res) => {
   try {
     const absens = await AbsenRapat.findAll({
@@ -35,7 +34,6 @@ exports.getAllAbsen = async (req, res) => {
   }
 };
 
-// GET absen berdasarkan agenda
 exports.getAbsenByAgenda = async (req, res) => {
   try {
     const { id_agenda } = req.params;
@@ -65,7 +63,6 @@ exports.getAbsenByAgenda = async (req, res) => {
   }
 };
 
-// GET absen berdasarkan pengurus
 exports.getAbsenByPengurus = async (req, res) => {
   try {
     const { id_pengurus } = req.params;
@@ -95,12 +92,10 @@ exports.getAbsenByPengurus = async (req, res) => {
   }
 };
 
-// POST - Buat absen rapat (untuk absen kehadiran)
 exports.createAbsen = async (req, res) => {
   try {
     const { id_agenda, id_pengurus, photobuktiUrl, status } = req.body;
 
-    // Validasi input
     if (!id_agenda || !id_pengurus) {
       return res.status(400).json({
         success: false,
@@ -108,7 +103,6 @@ exports.createAbsen = async (req, res) => {
       });
     }
 
-    // Cek apakah agenda exist
     const agenda = await AgendaRapat.findByPk(id_agenda);
     if (!agenda) {
       return res.status(404).json({
@@ -117,7 +111,6 @@ exports.createAbsen = async (req, res) => {
       });
     }
 
-    // Cek apakah pengurus exist
     const pengurus = await Pengurus.findByPk(id_pengurus);
     if (!pengurus) {
       return res.status(404).json({
@@ -126,7 +119,6 @@ exports.createAbsen = async (req, res) => {
       });
     }
 
-    // Cek apakah sudah absen sebelumnya
     const existingAbsen = await AbsenRapat.findOne({
       where: { id_agenda, id_pengurus },
     });
@@ -138,7 +130,6 @@ exports.createAbsen = async (req, res) => {
       });
     }
 
-    // Buat absen baru dengan waktu WIB
     const newAbsen = await AbsenRapat.create({
       id_agenda,
       id_pengurus,
@@ -147,10 +138,8 @@ exports.createAbsen = async (req, res) => {
       status: status || "present",
     });
 
-    // Update agenda menjadi isDone = true (rapat sudah dimulai/berlangsung)
     await agenda.update({ isDone: true });
 
-    // Ambil data lengkap
     const absenWithDetails = await AbsenRapat.findByPk(newAbsen.id_absenRapat, {
       include: [
         {
@@ -180,7 +169,6 @@ exports.createAbsen = async (req, res) => {
   }
 };
 
-// PUT - Update absen (misal update status atau foto bukti)
 exports.updateAbsen = async (req, res) => {
   try {
     const { id } = req.params;
@@ -214,7 +202,6 @@ exports.updateAbsen = async (req, res) => {
   }
 };
 
-// DELETE - Hapus absen
 exports.deleteAbsen = async (req, res) => {
   try {
     const { id } = req.params;

@@ -4,7 +4,6 @@ const { admin, firebaseInitialized } = require("../config/firebaseConfig");
 const { Notification } = require("../models/NotificationModel");
 
 const createEvent = async (req, res) => {
-  // Ambil data dari body request (multipart form data)
   const {
     id_pengurus,
     nama_event,
@@ -17,7 +16,6 @@ const createEvent = async (req, res) => {
     deskripsi
   } = req.body;
 
-  // Validasi input wajib
   if (!id_pengurus || !nama_event || !tanggal || !waktu || !tempat || !penyelenggara) {
     return res.status(400).json({ message: "ID pengurus, nama event, tanggal, waktu, tempat, dan penyelenggara wajib diisi" });
   }
@@ -48,7 +46,6 @@ const createEvent = async (req, res) => {
       console.log("❌ No file uploaded - req.file is null");
     }
 
-    // Simpan data ke database
     const newEvent = await Event.create({
       id_pengurus,
       nama_event,
@@ -64,9 +61,7 @@ const createEvent = async (req, res) => {
 
     console.log("Event created successfully with poster_url:", newEvent.poster_url);
 
-    // Kirim notifikasi ke semua user
     try {
-      // Format tanggal yang lebih mudah dibaca (contoh: "13 Desember 2025")
       const dateObj = new Date(tanggal);
       const bulanNama = ["Januari", "Februari", "Maret", "April", "Mei", "Juni",
         "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
@@ -75,31 +70,32 @@ const createEvent = async (req, res) => {
       const notificationTitle = "📢 Event Baru!";
       const notificationBody = `${nama_event} - ${tanggalFormatted} di ${tempat}`;
 
-      // Simpan notifikasi ke database
       await Notification.create({
         title: notificationTitle,
         body: notificationBody,
       });
 
-      // Kirim notifikasi via Firebase Cloud Messaging ke topic 'events'
       if (firebaseInitialized) {
-        // GUNAKAN DATA PAYLOAD agar notifikasi SELALU muncul (foreground & background)
         const message = {
-          data: {
+          notification: {
             title: notificationTitle,
             body: notificationBody,
           },
-          topic: "events", // Semua user yang subscribe ke topic ini akan menerima notifikasi
+          data: {
+            title: notificationTitle,
+            body: notificationBody,
+            type: "event", 
+          },
+          topic: "events", 
         };
 
         await admin.messaging().send(message);
-        console.log("✅ Successfully sent FCM data payload for event:", nama_event);
+        console.log("✅ Successfully sent FCM notification for event:", nama_event);
       } else {
         console.log("⚠️  Notification saved to DB but NOT sent via FCM (Firebase not configured)");
       }
     } catch (notifError) {
       console.error("Error sending notification:", notifError);
-      // Tidak mengembalikan error ke user karena event sudah berhasil dibuat
     }
 
     return res.status(201).json({
@@ -114,7 +110,6 @@ const createEvent = async (req, res) => {
 const getEvents = async (req, res) => {
   try {
     const events = await Event.findAll({
-      // Mengambil data relasi dari tabel Pengurus (Creator) 
       include: [
         {
           model: Pengurus,
@@ -123,10 +118,8 @@ const getEvents = async (req, res) => {
         },
 
       ],
-      order: [['tanggal', 'DESC'], ['waktu', 'ASC']], // Mengurutkan dari event terbaru
+      order: [['tanggal', 'DESC'], ['waktu', 'ASC']], 
     });
-
-    // Return empty array jika tidak ada event, bukan error
     return res.status(200).json({
       message: "Daftar event berhasil diambil",
       events: events
@@ -141,7 +134,6 @@ const deleteEvent = async (req, res) => {
   const { id } = req.params;
 
   try {
-    // Cari dan hapus event
     const deletedRows = await Event.destroy({
       where: { id_event: id }
     });
@@ -157,15 +149,13 @@ const deleteEvent = async (req, res) => {
     return res.status(500).json({ message: "Terjadi kesalahan pada server saat menghapus event" });
   }
 };
-// Tambahkan di bawah fungsi deleteEvent yang sudah ada
 
 const getEventById = async (req, res) => {
-  const { id } = req.params; // Ambil ID dari URL parameter
+  const { id } = req.params; 
 
   try {
     const event = await Event.findOne({
       where: { id_event: id },
-      // Mengambil data relasi dari tabel Pengurus (Creator)
       include: [
         {
           model: Pengurus,
@@ -181,7 +171,7 @@ const getEventById = async (req, res) => {
 
     return res.status(200).json({
       message: "Detail event berhasil diambil",
-      event: event // Mengembalikan objek event tunggal
+      event: event 
     });
   } catch (error) {
     console.error("Error fetching event by ID:", error);
@@ -191,7 +181,7 @@ const getEventById = async (req, res) => {
 const updateEvent = async (req, res) => {
   const { id } = req.params;
   const {
-    id_pengurus, // Asumsi ini adalah ID user yang melakukan edit (Pengedit)
+    id_pengurus,
     nama_event,
     tanggal,
     waktu,
@@ -203,8 +193,7 @@ const updateEvent = async (req, res) => {
   } = req.body;
 
   const updatePayload = {
-    id_pengedit: id_pengurus, // Opsional: catat siapa yang mengedit
-    nama_event,
+    id_pengedit: id_pengurus, 
     tanggal,
     waktu,
     tempat,
@@ -222,13 +211,9 @@ const updateEvent = async (req, res) => {
     }
 
     if (req.file) {
-      // Jika ada file baru diunggah, generate URL poster baru
       const posterUrl = `${req.protocol}://${req.get("host")}/uploads/events/${req.file.filename}`;
       updatePayload.poster_url = posterUrl;
-      // TODO: Tambahkan logika penghapusan file lama di server jika diperlukan
     }
-
-    // Hapus field yang bernilai null/undefined agar tidak menimpa data yang sudah ada (jika Anda ingin membiarkan field tertentu tidak berubah)
     Object.keys(updatePayload).forEach(key =>
       (updatePayload[key] === undefined || updatePayload[key] === null) && delete updatePayload[key]
     );
@@ -238,10 +223,7 @@ const updateEvent = async (req, res) => {
       where: { id_event: id }
     });
 
-    // Ambil data event yang sudah diupdate untuk respon
     const updatedEvent = await Event.findByPk(id);
-
-    // Kirim status 200 (OK) meskipun updatedRows === 0, selama event ditemukan
     return res.status(200).json({
       message: updatedRows > 0 ? "Event berhasil diupdate" : "Event berhasil diupdate (tidak ada perubahan data)",
       event: updatedEvent

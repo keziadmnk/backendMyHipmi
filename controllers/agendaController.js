@@ -4,10 +4,9 @@ const AbsenRapat = require("../models/AbsenRapatModel");
 const { admin, firebaseInitialized } = require("../config/firebaseConfig");
 const { Notification } = require("../models/NotificationModel");
 
-// GET semua agenda rapat
 exports.getAllAgenda = async (req, res) => {
   try {
-    const { id_pengurus } = req.query; // Ambil id_pengurus dari query parameter
+    const { id_pengurus } = req.query; 
 
     const agendas = await AgendaRapat.findAll({
       include: [
@@ -25,7 +24,6 @@ exports.getAllAgenda = async (req, res) => {
       order: [["date", "DESC"], ["startAt", "DESC"]],
     });
 
-    // Tambahkan info hasAttended jika id_pengurus dikirim
     const agendasWithAttendance = agendas.map(agenda => {
       const agendaData = agenda.toJSON();
       if (id_pengurus) {
@@ -51,11 +49,10 @@ exports.getAllAgenda = async (req, res) => {
   }
 };
 
-// GET agenda rapat by ID
 exports.getAgendaById = async (req, res) => {
   try {
     const { id } = req.params;
-    const { id_pengurus } = req.query; // Ambil id_pengurus dari query parameter
+    const { id_pengurus } = req.query; 
 
     const agenda = await AgendaRapat.findByPk(id, {
       include: [
@@ -85,7 +82,6 @@ exports.getAgendaById = async (req, res) => {
       });
     }
 
-    // Tambahkan info hasAttended jika id_pengurus dikirim
     const agendaData = agenda.toJSON();
     if (id_pengurus) {
       const userAbsen = agendaData.Absensis?.find(
@@ -108,7 +104,6 @@ exports.getAgendaById = async (req, res) => {
   }
 };
 
-// POST - Buat agenda rapat baru
 exports.createAgenda = async (req, res) => {
   try {
     const {
@@ -126,7 +121,6 @@ exports.createAgenda = async (req, res) => {
       description,
     } = req.body;
 
-    // Validasi input
     if (!id_pengurus || !title || !creatorId || !creatorName || !date || !startAt || !endAt) {
       return res.status(400).json({
         success: false,
@@ -150,42 +144,41 @@ exports.createAgenda = async (req, res) => {
       isDone: false,
     });
 
-    // Kirim notifikasi ke semua user
     try {
-      // Format tanggal yang lebih mudah dibaca
       const dateObj = new Date(date);
       const bulanNama = ["Januari", "Februari", "Maret", "April", "Mei", "Juni",
         "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
       const tanggalFormatted = `${dateObj.getDate()} ${bulanNama[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
 
-      const notificationTitle = "📅 Agenda Rapat Baru!";
+      const notificationTitle = "Agenda Rapat Baru!";
       const notificationBody = `${title} - ${tanggalFormatted} ${startTimeDisplay || ''} di ${location}`;
 
-      // Simpan notifikasi ke database
       await Notification.create({
         title: notificationTitle,
         body: notificationBody,
       });
 
-      // Kirim notifikasi via Firebase Cloud Messaging ke topic 'agenda_rapat'
       if (firebaseInitialized) {
-        // GUNAKAN DATA PAYLOAD agar notifikasi SELALU muncul (foreground & background)
         const message = {
-          data: {
+          notification: {
             title: notificationTitle,
             body: notificationBody,
           },
-          topic: "agenda_rapat", // Semua user yang subscribe ke topic ini akan menerima notifikasi
+          data: {
+            title: notificationTitle,
+            body: notificationBody,
+            type: "agenda_rapat", 
+          },
+          topic: "agenda_rapat", 
         };
 
         await admin.messaging().send(message);
-        console.log("✅ Successfully sent FCM data payload for agenda rapat:", title);
+        console.log("✅ Successfully sent FCM notification for agenda rapat:", title);
       } else {
         console.log("⚠️  Notification saved to DB but NOT sent via FCM (Firebase not configured)");
       }
     } catch (notifError) {
       console.error("Error sending notification:", notifError);
-      // Tidak mengembalikan error ke user karena agenda rapat sudah berhasil dibuat
     }
 
     res.status(201).json({
@@ -202,7 +195,6 @@ exports.createAgenda = async (req, res) => {
   }
 };
 
-// PUT - Update agenda rapat
 exports.updateAgenda = async (req, res) => {
   try {
     const { id } = req.params;
@@ -255,7 +247,6 @@ exports.updateAgenda = async (req, res) => {
   }
 };
 
-// DELETE - Hapus agenda rapat
 exports.deleteAgenda = async (req, res) => {
   try {
     const { id } = req.params;
@@ -284,7 +275,6 @@ exports.deleteAgenda = async (req, res) => {
   }
 };
 
-// GET agenda rapat berdasarkan pengurus
 exports.getAgendaByPengurus = async (req, res) => {
   try {
     const { id_pengurus } = req.params;

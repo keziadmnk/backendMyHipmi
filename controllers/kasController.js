@@ -4,7 +4,6 @@ const { admin, firebaseInitialized } = require("../config/firebaseConfig");
 const { Notification } = require("../models/NotificationModel");
 const path = require("path");
 
-// Helper function untuk mengirim FCM notification
 const sendFCMNotification = async (fcmToken, title, body, data = {}) => {
   if (!firebaseInitialized) {
     console.log("⚠️  Firebase not initialized, skipping notification");
@@ -35,7 +34,6 @@ const sendFCMNotification = async (fcmToken, title, body, data = {}) => {
   }
 };
 
-// GET /api/kas - Get all kas (dengan optional filter user_id)
 const getKasList = async (req, res) => {
   try {
     const { user_id } = req.query;
@@ -54,17 +52,16 @@ const getKasList = async (req, res) => {
       order: [["tanggal", "DESC"]],
     });
 
-    // Format response sesuai frontend requirement
     const formattedData = kasList.map((kas) => ({
       id: kas.id,
       user_id: kas.user_id,
       deskripsi: kas.deskripsi,
-      nominal: parseFloat(kas.nominal), // Pastikan nominal berupa number
+      nominal: parseFloat(kas.nominal), 
       bukti_transfer_url: kas.bukti_transfer_url
         ? `${req.protocol}://${req.get("host")}/${kas.bukti_transfer_url}`
         : null,
-      tanggal: kas.tanggal, // Format: YYYY-MM-DD HH:mm:ss
-      status: kas.status.toLowerCase(), // Pastikan lowercase untuk konsistensi
+      tanggal: kas.tanggal, 
+      status: kas.status.toLowerCase(), 
       user: kas.User ? {
         id_pengurus: kas.User.id_pengurus,
         nama_pengurus: kas.User.nama_pengurus,
@@ -87,12 +84,9 @@ const getKasList = async (req, res) => {
   }
 };
 
-// POST /api/kas - Create new kas
 const createKas = async (req, res) => {
   try {
     const { user_id, deskripsi, nominal } = req.body;
-
-    // Validasi input
     if (!user_id || !deskripsi || !nominal) {
       return res.status(400).json({
         success: false,
@@ -100,7 +94,6 @@ const createKas = async (req, res) => {
       });
     }
 
-    // Validasi nominal harus berupa angka
     if (isNaN(nominal) || parseFloat(nominal) <= 0) {
       return res.status(400).json({
         success: false,
@@ -108,7 +101,6 @@ const createKas = async (req, res) => {
       });
     }
 
-    // Cek apakah user exists
     const user = await Pengurus.findByPk(user_id);
     if (!user) {
       return res.status(404).json({
@@ -117,13 +109,11 @@ const createKas = async (req, res) => {
       });
     }
 
-    // Handle file upload
     let buktiTransferUrl = null;
     if (req.file) {
       buktiTransferUrl = req.file.path.replace(/\\/g, "/");
     }
 
-    // Create kas entry
     const newKas = await Kas.create({
       user_id: parseInt(user_id),
       deskripsi: deskripsi,
@@ -133,7 +123,6 @@ const createKas = async (req, res) => {
       status: "pending",
     });
 
-    // Format response sesuai dokumentasi frontend
     const responseData = {
       id: newKas.id,
       user_id: newKas.user_id,
@@ -153,8 +142,6 @@ const createKas = async (req, res) => {
     });
   } catch (error) {
     console.error("Error creating kas:", error);
-
-    // Handle file upload error
     if (error.message && error.message.includes("File")) {
       return res.status(400).json({
         success: false,
@@ -168,14 +155,10 @@ const createKas = async (req, res) => {
     });
   }
 };
-
-// PUT /api/kas/:id - Update kas
 const updateKas = async (req, res) => {
   try {
     const { id } = req.params;
     const { deskripsi, nominal, status } = req.body;
-
-    // Cek apakah kas exists
     const kas = await Kas.findByPk(id);
     if (!kas) {
       return res.status(404).json({
@@ -183,8 +166,6 @@ const updateKas = async (req, res) => {
         message: "Data kas tidak ditemukan",
       });
     }
-
-    // Prepare update data
     const updateData = {};
     if (deskripsi) updateData.deskripsi = deskripsi;
     if (nominal) {
@@ -197,9 +178,7 @@ const updateKas = async (req, res) => {
       updateData.nominal = parseFloat(nominal);
     }
 
-    // Handle file upload
     if (req.file) {
-      // Hapus file lama jika ada
       if (kas.bukti_transfer_url) {
         const fs = require("fs");
         const oldFilePath = path.join(__dirname, "..", kas.bukti_transfer_url);
@@ -212,20 +191,16 @@ const updateKas = async (req, res) => {
           }
         }
       }
-      // Simpan path file baru
       updateData.bukti_transfer_url = req.file.path.replace(/\\/g, "/");
     }
 
-    // Handle status change
     const oldStatus = kas.status;
     if (status && ["pending", "lunas", "ditolak"].includes(status.toLowerCase())) {
       updateData.status = status.toLowerCase();
     }
 
-    // Update kas
     await kas.update(updateData);
 
-    // Send FCM notification if status changed
     if (status && status !== oldStatus) {
       const user = await Pengurus.findByPk(kas.user_id);
       if (user && user.fcm_token) {
@@ -260,7 +235,6 @@ const updateKas = async (req, res) => {
       }
     }
 
-    // Format response
     const responseData = {
       id: kas.id,
       user_id: kas.user_id,
@@ -281,7 +255,6 @@ const updateKas = async (req, res) => {
   } catch (error) {
     console.error("Error updating kas:", error);
 
-    // Handle file upload error
     if (error.message && error.message.includes("File")) {
       return res.status(400).json({
         success: false,
@@ -296,12 +269,9 @@ const updateKas = async (req, res) => {
   }
 };
 
-// DELETE /api/kas/:id - Soft Delete (Reset Status to Pending)
 const deleteKas = async (req, res) => {
   try {
     const { id } = req.params;
-
-    // Cek apakah kas exists
     const kas = await Kas.findByPk(id);
     if (!kas) {
       return res.status(404).json({
@@ -310,7 +280,6 @@ const deleteKas = async (req, res) => {
       });
     }
 
-    // Delete file bukti transfer if exists
     if (kas.bukti_transfer_url) {
       const fs = require("fs");
       const filePath = path.join(__dirname, "..", kas.bukti_transfer_url);
@@ -324,7 +293,6 @@ const deleteKas = async (req, res) => {
       }
     }
 
-    // Update: Reset status to pending & remove bukti_transfer_url
     await kas.update({
       status: "pending",
       bukti_transfer_url: null,
@@ -354,7 +322,6 @@ const deleteKas = async (req, res) => {
   }
 };
 
-// GET /api/kas/:id - Get single kas by ID
 const getKasById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -376,7 +343,6 @@ const getKasById = async (req, res) => {
       });
     }
 
-    // Format response
     const responseData = {
       id: kas.id,
       user_id: kas.user_id,
@@ -409,14 +375,12 @@ const getKasById = async (req, res) => {
   }
 };
 
-// GET /api/kas/total - Get total kas untuk dashboard
 const getTotalKas = async (req, res) => {
   try {
     const { user_id } = req.query;
 
     const whereClause = user_id ? { user_id: parseInt(user_id) } : {};
 
-    // Ambil semua data kas dengan status "lunas"
     const kasList = await Kas.findAll({
       where: {
         ...whereClause,
@@ -425,12 +389,10 @@ const getTotalKas = async (req, res) => {
       attributes: ["nominal"]
     });
 
-    // Hitung total kas yang terkumpul (hanya jumlahkan, tidak kurangi)
     const totalKas = kasList.reduce((total, kas) => {
       return total + parseFloat(kas.nominal);
     }, 0);
 
-    // Response sesuai format frontend
     res.status(200).json({
       success: true,
       message: "Total kas berhasil diambil",
@@ -446,10 +408,8 @@ const getTotalKas = async (req, res) => {
   }
 };
 
-// Send kas payment reminder notification
 const sendKasReminder = async () => {
   try {
-    // Get current month name in Indonesian
     const bulanNama = [
       "Januari", "Februari", "Maret", "April", "Mei", "Juni",
       "Juli", "Agustus", "September", "Oktober", "November", "Desember"
@@ -463,15 +423,12 @@ const sendKasReminder = async () => {
 
     console.log(`📢 Sending kas reminder for ${currentMonth} ${currentYear}...`);
 
-    // Save notification to database
     const savedNotification = await Notification.create({
       title: notificationTitle,
       body: notificationBody,
     });
 
     console.log(`✅ Notification saved to database (ID: ${savedNotification.id_notification})`);
-
-    // Send via Firebase Cloud Messaging to topic 'kas_reminder'
     if (firebaseInitialized) {
       const message = {
         data: {
@@ -481,7 +438,7 @@ const sendKasReminder = async () => {
           month: currentMonth,
           year: currentYear.toString(),
         },
-        topic: "kas_reminder", // All users subscribed to this topic will receive
+        topic: "kas_reminder", 
       };
 
       const response = await admin.messaging().send(message);
@@ -507,7 +464,6 @@ const sendKasReminder = async () => {
   }
 };
 
-// Manual trigger endpoint for testing
 const sendKasReminderManual = async (req, res) => {
   try {
     console.log("🔔 Manual kas reminder triggered by API call");
@@ -535,6 +491,6 @@ module.exports = {
   deleteKas,
   getKasById,
   getTotalKas,
-  sendKasReminder,        // For scheduler
-  sendKasReminderManual,  // For API endpoint
+  sendKasReminder,      
+  sendKasReminderManual,  
 };

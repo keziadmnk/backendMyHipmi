@@ -2,7 +2,6 @@ const AbsenPiket = require("../models/AbsenPiketModel");
 const { Pengurus } = require("../models/PengurusModel");
 const { JadwalPiket } = require("../models/JadwalPiketModel");
 
-// POST - Buat absen piket baru
 exports.createAbsenPiket = async (req, res) => {
   try {
     const {
@@ -15,7 +14,6 @@ exports.createAbsenPiket = async (req, res) => {
       foto_bukti,
     } = req.body;
 
-    // Validasi input wajib
     if (!id_pengurus || !id_jadwal_piket || !tanggal_absen || !jam_mulai || !jam_selesai || !keterangan || !foto_bukti) {
       return res.status(400).json({
         success: false,
@@ -23,7 +21,6 @@ exports.createAbsenPiket = async (req, res) => {
       });
     }
 
-    // Cek apakah pengurus exist
     const pengurus = await Pengurus.findByPk(id_pengurus);
     if (!pengurus) {
       return res.status(404).json({
@@ -32,7 +29,6 @@ exports.createAbsenPiket = async (req, res) => {
       });
     }
 
-    // Cek apakah jadwal piket exist
     const jadwalPiket = await JadwalPiket.findByPk(id_jadwal_piket);
     if (!jadwalPiket) {
       return res.status(404).json({
@@ -41,7 +37,6 @@ exports.createAbsenPiket = async (req, res) => {
       });
     }
 
-    // Validasi 1: Cek apakah hari ini sesuai dengan jadwal piket
     const hariIni = new Date(tanggal_absen);
     const namaHariIndonesia = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
     const hariSekarang = namaHariIndonesia[hariIni.getDay()];
@@ -53,7 +48,6 @@ exports.createAbsenPiket = async (req, res) => {
       });
     }
 
-    // Validasi 2: Cek apakah pengurus sudah absen di tanggal yang sama
     const existingAbsen = await AbsenPiket.findOne({
       where: {
         id_pengurus: id_pengurus,
@@ -68,7 +62,6 @@ exports.createAbsenPiket = async (req, res) => {
       });
     }
 
-    // Buat absen piket baru
     const newAbsenPiket = await AbsenPiket.create({
       id_pengurus,
       id_jadwal_piket,
@@ -77,10 +70,9 @@ exports.createAbsenPiket = async (req, res) => {
       jam_selesai,
       keterangan,
       foto_bukti,
-      status_absen: "sudah absen", // Default status
+      status_absen: "sudah absen", 
     });
 
-    // Ambil data lengkap dengan relasi
     const absenWithDetails = await AbsenPiket.findByPk(newAbsenPiket.id_absen_piket, {
       include: [
         {
@@ -110,7 +102,6 @@ exports.createAbsenPiket = async (req, res) => {
   }
 };
 
-// GET - Ambil semua absen piket
 exports.getAllAbsenPiket = async (req, res) => {
   try {
     const absenPiket = await AbsenPiket.findAll({
@@ -142,7 +133,6 @@ exports.getAllAbsenPiket = async (req, res) => {
   }
 };
 
-// GET - Ambil absen piket berdasarkan pengurus
 exports.getAbsenPiketByPengurus = async (req, res) => {
   try {
     const { id_pengurus } = req.params;
@@ -177,7 +167,6 @@ exports.getAbsenPiketByPengurus = async (req, res) => {
   }
 };
 
-// GET - Ambil absen piket berdasarkan ID
 exports.getAbsenPiketById = async (req, res) => {
   try {
     const { id_absen_piket } = req.params;
